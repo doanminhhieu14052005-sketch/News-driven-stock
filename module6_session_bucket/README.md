@@ -37,6 +37,8 @@ Mac dinh:
 `data/processed/articles_session_mapped.csv`
 
 Output giu tat ca cot goc va them nam cot mapping cua Module 6.
+CSV output duoc ghi bang `utf-8-sig` de ho tro tieng Viet khi mo bang Excel,
+GitHub preview, va VS Code.
 
 ## Quy tac bucket
 

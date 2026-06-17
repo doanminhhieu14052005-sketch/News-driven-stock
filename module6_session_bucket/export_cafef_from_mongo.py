@@ -16,6 +16,7 @@ import pandas as pd
 DEFAULT_OUTPUT = Path("data/raw/articles.csv")
 DEFAULT_MONGO_DB_NAME = "cafef_news"
 DEFAULT_MONGO_COLLECTION = "articles"
+CSV_ENCODING = "utf-8-sig"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,10 +25,12 @@ logging.basicConfig(
 logger = logging.getLogger("module6_export_cafef")
 
 
-def _json_string(value: Any) -> str | None:
-    """Serialize nested MongoDB values without leaking credentials."""
+def _json_string(value: Any) -> Any:
+    """Serialize nested MongoDB values while preserving Vietnamese text."""
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return None
+    if not isinstance(value, (dict, list)):
+        return value
     try:
         return json.dumps(value, ensure_ascii=False, default=str)
     except TypeError:
@@ -99,7 +102,7 @@ def export_cafef_articles(output: Path, limit: int | None = None) -> pd.DataFram
 
     df = pd.DataFrame(records)
     output.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(output, index=False)
+    df.to_csv(output, index=False, encoding=CSV_ENCODING)
 
     logger.info("Exported CafeF articles: %d", len(df))
     logger.info("Articles missing published_at in collection: %d", missing_published_at)

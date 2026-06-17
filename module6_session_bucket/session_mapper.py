@@ -17,6 +17,7 @@ DEFAULT_ARTICLES_INPUT = Path("data/raw/articles.csv")
 DEFAULT_TRADING_CALENDAR = Path("VNStock/data/processed/daily_sector_price_wide.csv")
 DEFAULT_OUTPUT = Path("data/processed/articles_session_mapped.csv")
 DEFAULT_TIMEZONE = "Asia/Ho_Chi_Minh"
+CSV_ENCODING = "utf-8-sig"
 
 ADDED_COLUMNS = [
     "published_at_vn",
@@ -33,6 +34,14 @@ logging.basicConfig(
 logger = logging.getLogger("module6_session_bucket")
 
 
+def read_csv_vietnamese(path: Path) -> pd.DataFrame:
+    """Read CSV files that may include Vietnamese text."""
+    try:
+        return pd.read_csv(path, encoding=CSV_ENCODING)
+    except UnicodeDecodeError:
+        return pd.read_csv(path, encoding="utf-8")
+
+
 def _normalize_date(value: Any) -> pd.Timestamp:
     """Convert a date-like value to a timezone-naive normalized Timestamp."""
     timestamp = pd.Timestamp(value)
@@ -46,7 +55,7 @@ def load_trading_calendar(path: Path) -> list[pd.Timestamp]:
     if not path.exists():
         raise FileNotFoundError(f"Trading calendar file not found: {path}")
 
-    calendar_df = pd.read_csv(path)
+    calendar_df = read_csv_vietnamese(path)
     if "trade_date" not in calendar_df.columns:
         raise ValueError(f"Trading calendar is missing trade_date column: {path}")
 
@@ -227,11 +236,16 @@ def main() -> int:
 
     try:
         trading_days = load_trading_calendar(args.trading_calendar)
-        articles_df = pd.read_csv(args.articles_input)
+        articles_df = read_csv_vietnamese(args.articles_input)
         mapped_df = map_articles_df(articles_df, trading_days, args.timezone)
         validate_output(mapped_df)
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        mapped_df.to_csv(args.output, index=False, date_format="%Y-%m-%d")
+        mapped_df.to_csv(
+            args.output,
+            index=False,
+            date_format="%Y-%m-%d",
+            encoding=CSV_ENCODING,
+        )
         logger.info("Output written to: %s", args.output)
         return 0
     except (FileNotFoundError, ValueError, pd.errors.ParserError) as exc:
