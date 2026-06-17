@@ -1,0 +1,86 @@
+name: Daily News-driven Stock Pipeline
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 10 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  daily-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run Module 5 VNStock
+        run: |
+          END_DATE=$(date +%F)
+          python VNStock/module5_vnstock_price.py --start-date 2024-01-01 --end-date "$END_DATE" --output-dir VNStock/data/processed
+
+      - name: Export CafeF articles from MongoDB
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+          MONGO_COLLECTION: ${{ secrets.MONGO_COLLECTION }}
+        run: |
+          python module6_session_bucket/export_cafef_from_mongo.py --output data/raw/articles.csv
+
+      - name: Run Module 6 session mapper
+        run: |
+          python module6_session_bucket/session_mapper.py --articles-input data/raw/articles.csv --trading-calendar VNStock/data/processed/daily_sector_price_wide.csv --output data/processed/articles_session_mapped.csv
+
+      - name: Verify pipeline outputs
+        run: |
+          test -f VNStock/data/processed/daily_sector_price_wide.csv
+          test -f VNStock/data/processed/daily_sector_price_long.csv
+          test -f data/processed/articles_session_mapped.csv
+          python - << 'PY'
+          import pandas as pd
+
+          price_wide = pd.read_csv("VNStock/data/processed/daily_sector_price_wide.csv")
+          price_long = pd.read_csv("VNStock/data/processed/daily_sector_price_long.csv")
+          articles = pd.read_csv("data/processed/articles_session_mapped.csv")
+
+          print("price wide shape:", price_wide.shape)
+          print("price long shape:", price_long.shape)
+          print("articles_session_mapped shape:", articles.shape)
+          print("price date range:", price_wide["trade_date"].min(), "->", price_wide["trade_date"].max())
+          if "trade_date" in articles.columns:
+              print("articles trade_date range:", articles["trade_date"].min(), "->", articles["trade_date"].max())
+          if "session_bucket" in articles.columns:
+              print("session_bucket distribution:")
+              print(articles["session_bucket"].value_counts(dropna=False))
+          PY
+
+      - name: Commit and push processed outputs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add VNStock/data/processed/daily_sector_price_wide.csv
+          git add VNStock/data/processed/daily_sector_price_long.csv
+          git add data/processed/articles_session_mapped.csv
+
+          if git diff --cached --quiet; then
+            echo "No processed data changes to commit"
+          else
+            git commit -m "Update processed pipeline outputs"
+            git push
+          fi

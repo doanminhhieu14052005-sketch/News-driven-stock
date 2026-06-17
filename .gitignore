@@ -1,0 +1,12 @@
+venv/
+.venv/
+**/__pycache__/
+*.pyc
+.env
+data/raw/articles.csv
+.DS_Store
+.ipynb_checkpoints/
+VNStock/.git/
+VNStock/venv/
+VNStock/.venv/
+.nested_git_backup/
