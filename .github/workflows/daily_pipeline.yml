@@ -54,19 +54,43 @@ jobs:
           python - << 'PY'
           import pandas as pd
 
-          price_wide = pd.read_csv("VNStock/data/processed/daily_sector_price_wide.csv")
-          price_long = pd.read_csv("VNStock/data/processed/daily_sector_price_long.csv")
-          articles = pd.read_csv("data/processed/articles_session_mapped.csv")
+          wide = pd.read_csv("VNStock/data/processed/daily_sector_price_wide.csv")
+          long = pd.read_csv("VNStock/data/processed/daily_sector_price_long.csv")
+          mapped = pd.read_csv("data/processed/articles_session_mapped.csv")
 
-          print("price wide shape:", price_wide.shape)
-          print("price long shape:", price_long.shape)
-          print("articles_session_mapped shape:", articles.shape)
-          print("price date range:", price_wide["trade_date"].min(), "->", price_wide["trade_date"].max())
-          if "trade_date" in articles.columns:
-              print("articles trade_date range:", articles["trade_date"].min(), "->", articles["trade_date"].max())
-          if "session_bucket" in articles.columns:
+          print("price wide shape:", wide.shape)
+          print("price long shape:", long.shape)
+          print("mapped articles shape:", mapped.shape)
+
+          wide["trade_date"] = pd.to_datetime(wide["trade_date"], errors="coerce")
+          price_dates = wide["trade_date"].dropna()
+          if len(price_dates) == 0:
+              raise RuntimeError("No valid trade_date found in price wide CSV")
+          print("price date range:", price_dates.min().date(), "->", price_dates.max().date())
+
+          if "trade_date" not in mapped.columns:
+              raise RuntimeError("Missing trade_date column in articles_session_mapped.csv")
+
+          mapped["trade_date"] = pd.to_datetime(mapped["trade_date"], errors="coerce")
+          valid_article_dates = mapped["trade_date"].dropna()
+
+          print("mapped articles null trade_date:", mapped["trade_date"].isna().sum())
+
+          if len(valid_article_dates) == 0:
+              raise RuntimeError("No valid trade_date found in articles_session_mapped.csv")
+
+          print(
+              "mapped articles date range:",
+              valid_article_dates.min().date(),
+              "->",
+              valid_article_dates.max().date(),
+          )
+
+          if "session_bucket" in mapped.columns:
               print("session_bucket distribution:")
-              print(articles["session_bucket"].value_counts(dropna=False))
+              print(mapped["session_bucket"].value_counts(dropna=False).to_string())
+
+          print("Verification completed successfully.")
           PY
 
       - name: Commit and push processed outputs
