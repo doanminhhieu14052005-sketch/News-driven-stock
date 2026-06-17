@@ -1,0 +1,11 @@
+requests==2.31.0
+beautifulsoup4==4.12.2
+trafilatura==1.6.3
+pydantic==2.5.0
+pymongo==4.6.0
+python-dotenv==1.0.0
+httpx==0.26.0
+schedule==1.2.1
+tqdm==4.66.2
+vnstock3
+pyarrow

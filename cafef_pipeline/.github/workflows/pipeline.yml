@@ -1,0 +1,31 @@
+name: CafeF Pipeline
+
+on:
+  schedule:
+    # Chạy lúc 00:25, 05:25, 11:25 UTC (Tương ứng 07:25, 12:25, 18:25 VN)
+    - cron: '25 0,5,11 * * *'
+  workflow_dispatch: # Cho phép chạy thủ công bằng nút bấm trên GitHub
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip' # Cache thư viện để các lần sau cài nhanh hơn
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Orchestrator
+        env:
+          LLM_BACKEND: groq
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: python orchestrator.py
