@@ -46,21 +46,31 @@ jobs:
         run: |
           python module6_session_bucket/session_mapper.py --articles-input data/raw/articles.csv --trading-calendar VNStock/data/processed/daily_sector_price_wide.csv --output data/processed/articles_session_mapped.csv
 
+      - name: Run Module 7 sector sentiment mapper
+        run: |
+          python module7_sector_sentiment/cafef_sector_sentiment_mapper.py --input data/processed/articles_session_mapped.csv --output data/processed/cafef_articles_labeled.csv --long-output data/processed/cafef_article_sector_long.csv
+
       - name: Verify pipeline outputs
         run: |
           test -f VNStock/data/processed/daily_sector_price_wide.csv
           test -f VNStock/data/processed/daily_sector_price_long.csv
           test -f data/processed/articles_session_mapped.csv
+          test -f data/processed/cafef_articles_labeled.csv
+          test -f data/processed/cafef_article_sector_long.csv
           python - << 'PY'
           import pandas as pd
 
           wide = pd.read_csv("VNStock/data/processed/daily_sector_price_wide.csv")
           long = pd.read_csv("VNStock/data/processed/daily_sector_price_long.csv")
-          mapped = pd.read_csv("data/processed/articles_session_mapped.csv")
+          mapped = pd.read_csv("data/processed/articles_session_mapped.csv", encoding="utf-8-sig")
+          labeled = pd.read_csv("data/processed/cafef_articles_labeled.csv", encoding="utf-8-sig")
+          sector_long = pd.read_csv("data/processed/cafef_article_sector_long.csv", encoding="utf-8-sig")
 
           print("price wide shape:", wide.shape)
           print("price long shape:", long.shape)
           print("mapped articles shape:", mapped.shape)
+          print("cafef_articles_labeled shape:", labeled.shape)
+          print("cafef_article_sector_long shape:", sector_long.shape)
 
           wide["trade_date"] = pd.to_datetime(wide["trade_date"], errors="coerce")
           price_dates = wide["trade_date"].dropna()
@@ -90,6 +100,17 @@ jobs:
               print("session_bucket distribution:")
               print(mapped["session_bucket"].value_counts(dropna=False).to_string())
 
+          if "sentiment_score" in labeled.columns:
+              print("sentiment_score distribution:")
+              print(labeled["sentiment_score"].value_counts(dropna=False).to_string())
+
+          if "sector_label" in sector_long.columns:
+              print("sector_label distribution in long output:")
+              print(sector_long["sector_label"].value_counts(dropna=False).to_string())
+
+          if "sector_label" in labeled.columns:
+              print("unmapped article count:", int((labeled["sector_label"] == "Unmapped").sum()))
+
           print("Verification completed successfully.")
           PY
 
@@ -101,6 +122,8 @@ jobs:
           git add VNStock/data/processed/daily_sector_price_wide.csv
           git add VNStock/data/processed/daily_sector_price_long.csv
           git add data/processed/articles_session_mapped.csv
+          git add data/processed/cafef_articles_labeled.csv
+          git add data/processed/cafef_article_sector_long.csv
 
           if git diff --cached --quiet; then
             echo "No processed data changes to commit"
