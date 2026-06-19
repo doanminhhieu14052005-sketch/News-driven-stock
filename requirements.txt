@@ -4,3 +4,5 @@ vnstock
 pymongo
 python-dotenv
 statsmodels
+matplotlib
+networkx

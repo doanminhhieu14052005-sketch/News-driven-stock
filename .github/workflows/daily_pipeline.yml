@@ -62,6 +62,10 @@ jobs:
         run: |
           python module10_granger/granger_causality.py --input data/processed/merged_sentiment_return_wide.csv --stationarity-output data/processed/stationarity_tests.csv --all-lags-output data/processed/granger_all_lags.csv --results-output data/processed/granger_results.csv --pvalue-matrix-output data/processed/granger_pvalue_matrix.csv --fdr-matrix-output data/processed/granger_fdr_matrix.csv --adjacency-output data/processed/granger_adjacency_matrix.csv --edge-list-output data/processed/granger_edge_list.csv --max-lag 5 --min-observations 60 --alpha 0.05
 
+      - name: Run Module 11 Granger network visualization
+        run: |
+          python module11_network/build_granger_network.py --granger-results data/processed/granger_results.csv --pvalue-matrix data/processed/granger_pvalue_matrix.csv --fdr-matrix data/processed/granger_fdr_matrix.csv --adjacency-matrix data/processed/granger_adjacency_matrix.csv --output-dir data/processed --figures-dir reports/figures --alpha 0.05
+
       - name: Verify pipeline outputs
         run: |
           test -f VNStock/data/processed/daily_sector_price_wide.csv
@@ -81,7 +85,19 @@ jobs:
           test -f data/processed/granger_fdr_matrix.csv
           test -f data/processed/granger_adjacency_matrix.csv
           test -f data/processed/granger_edge_list.csv
+          test -f data/processed/network_edges_raw.csv
+          test -f data/processed/network_edges_fdr.csv
+          test -f data/processed/network_node_metrics_raw.csv
+          test -f data/processed/network_node_metrics_fdr.csv
+          test -f data/processed/network_summary.csv
+          test -f reports/figures/granger_network_raw.png
+          test -f reports/figures/granger_network_fdr.png
+          test -f reports/figures/granger_pvalue_heatmap.png
+          test -f reports/figures/granger_fdr_heatmap.png
+          test -f reports/figures/granger_raw_adjacency_heatmap.png
+          test -f reports/figures/granger_fdr_adjacency_heatmap.png
           python - << 'PY'
+          from pathlib import Path
           import pandas as pd
 
           wide = pd.read_csv("VNStock/data/processed/daily_sector_price_wide.csv")
@@ -101,6 +117,11 @@ jobs:
           fdr_matrix = pd.read_csv("data/processed/granger_fdr_matrix.csv", encoding="utf-8-sig")
           adjacency_matrix = pd.read_csv("data/processed/granger_adjacency_matrix.csv", encoding="utf-8-sig")
           edge_list = pd.read_csv("data/processed/granger_edge_list.csv", encoding="utf-8-sig")
+          network_edges_raw = pd.read_csv("data/processed/network_edges_raw.csv", encoding="utf-8-sig")
+          network_edges_fdr = pd.read_csv("data/processed/network_edges_fdr.csv", encoding="utf-8-sig")
+          network_metrics_raw = pd.read_csv("data/processed/network_node_metrics_raw.csv", encoding="utf-8-sig")
+          network_metrics_fdr = pd.read_csv("data/processed/network_node_metrics_fdr.csv", encoding="utf-8-sig")
+          network_summary = pd.read_csv("data/processed/network_summary.csv", encoding="utf-8-sig")
 
           print("price wide shape:", wide.shape)
           print("price long shape:", long.shape)
@@ -119,6 +140,12 @@ jobs:
           print("granger fdr matrix shape:", fdr_matrix.shape)
           print("granger adjacency matrix shape:", adjacency_matrix.shape)
           print("granger edge list shape:", edge_list.shape)
+          print("network_edges_raw shape:", network_edges_raw.shape)
+          print("network_edges_fdr shape:", network_edges_fdr.shape)
+          print("network node metrics raw shape:", network_metrics_raw.shape)
+          print("network node metrics fdr shape:", network_metrics_fdr.shape)
+          print("network summary:")
+          print(network_summary.to_string(index=False))
 
           wide["trade_date"] = pd.to_datetime(wide["trade_date"], errors="coerce")
           price_dates = wide["trade_date"].dropna()
@@ -198,6 +225,26 @@ jobs:
               print(edge_list.head(10).to_string(index=False))
           else:
               print("top Granger edges: none")
+          if not network_edges_raw.empty:
+              print("top 10 raw network edges:")
+              print(network_edges_raw.sort_values("edge_weight", ascending=False).head(10).to_string(index=False))
+          else:
+              print("top 10 raw network edges: none")
+          figure_paths = [
+              "reports/figures/granger_network_raw.png",
+              "reports/figures/granger_network_fdr.png",
+              "reports/figures/granger_pvalue_heatmap.png",
+              "reports/figures/granger_fdr_heatmap.png",
+              "reports/figures/granger_raw_adjacency_heatmap.png",
+              "reports/figures/granger_fdr_adjacency_heatmap.png",
+          ]
+          print("figure file sizes:")
+          for figure_path in figure_paths:
+              path = Path(figure_path)
+              size = path.stat().st_size
+              if size <= 0:
+                  raise RuntimeError(f"Figure is empty: {figure_path}")
+              print(figure_path, size)
 
           print("Verification completed successfully.")
           PY
@@ -207,23 +254,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add VNStock/data/processed/daily_sector_price_wide.csv
-          git add VNStock/data/processed/daily_sector_price_long.csv
-          git add data/processed/articles_session_mapped.csv
-          git add data/processed/cafef_articles_labeled.csv
-          git add data/processed/cafef_article_sector_long.csv
-          git add data/processed/daily_sector_sentiment_long.csv
-          git add data/processed/daily_sector_sentiment_wide.csv
-          git add data/processed/merged_sentiment_return_wide.csv
-          git add data/processed/merged_sentiment_return_long.csv
-          git add data/processed/merge_coverage_report.csv
-          git add data/processed/stationarity_tests.csv
-          git add data/processed/granger_all_lags.csv
-          git add data/processed/granger_results.csv
-          git add data/processed/granger_pvalue_matrix.csv
-          git add data/processed/granger_fdr_matrix.csv
-          git add data/processed/granger_adjacency_matrix.csv
-          git add data/processed/granger_edge_list.csv
+          git add VNStock/data/processed/*.csv
+          git add data/processed/*.csv
+          git add reports/figures/*.png
 
           if git diff --cached --quiet; then
             echo "No processed data changes to commit"

@@ -109,6 +109,21 @@ filled; each pair is tested after pairwise `dropna()`.
 Granger causality here means predictive causality in a time-series sense. It
 does not prove structural or economic causality.
 
+## Module 11 - Granger Spillover Network Visualization
+
+Location:
+
+`module11_network/build_granger_network.py`
+
+Module 11 builds raw exploratory and FDR-confirmed Granger sentiment spillover
+networks from Module 10 outputs. The raw network uses uncorrected
+`p < 0.05` edges for exploration. The FDR network uses Benjamini-Hochberg
+adjusted p-values and is more conservative; it may be empty with the current
+data.
+
+Self-loops are retained in edge CSVs for own-sector predictability, while
+network metrics and plots use cross-sector edges by default.
+
 ## Local Run
 
 Run from the repository root:
@@ -121,6 +136,7 @@ python module7_sector_sentiment/cafef_sector_sentiment_mapper.py --input data/pr
 python module8_daily_sentiment/daily_sector_sentiment_aggregator.py --input data/processed/cafef_article_sector_long.csv --output-long data/processed/daily_sector_sentiment_long.csv --output-wide data/processed/daily_sector_sentiment_wide.csv
 python module9_merge_sentiment_return/merge_sentiment_return.py --price-wide VNStock/data/processed/daily_sector_price_wide.csv --sentiment-wide data/processed/daily_sector_sentiment_wide.csv --sentiment-long data/processed/daily_sector_sentiment_long.csv --output-wide data/processed/merged_sentiment_return_wide.csv --output-long data/processed/merged_sentiment_return_long.csv --coverage-report data/processed/merge_coverage_report.csv
 python module10_granger/granger_causality.py --input data/processed/merged_sentiment_return_wide.csv --stationarity-output data/processed/stationarity_tests.csv --all-lags-output data/processed/granger_all_lags.csv --results-output data/processed/granger_results.csv --pvalue-matrix-output data/processed/granger_pvalue_matrix.csv --fdr-matrix-output data/processed/granger_fdr_matrix.csv --adjacency-output data/processed/granger_adjacency_matrix.csv --edge-list-output data/processed/granger_edge_list.csv --max-lag 5 --min-observations 60 --alpha 0.05
+python module11_network/build_granger_network.py --granger-results data/processed/granger_results.csv --pvalue-matrix data/processed/granger_pvalue_matrix.csv --fdr-matrix data/processed/granger_fdr_matrix.csv --adjacency-matrix data/processed/granger_adjacency_matrix.csv --output-dir data/processed --figures-dir reports/figures --alpha 0.05
 ```
 
 ## GitHub Secrets
@@ -154,6 +170,17 @@ Git.
 - `data/processed/granger_fdr_matrix.csv`
 - `data/processed/granger_adjacency_matrix.csv`
 - `data/processed/granger_edge_list.csv`
+- `data/processed/network_edges_raw.csv`
+- `data/processed/network_edges_fdr.csv`
+- `data/processed/network_node_metrics_raw.csv`
+- `data/processed/network_node_metrics_fdr.csv`
+- `data/processed/network_summary.csv`
+- `reports/figures/granger_network_raw.png`
+- `reports/figures/granger_network_fdr.png`
+- `reports/figures/granger_pvalue_heatmap.png`
+- `reports/figures/granger_fdr_heatmap.png`
+- `reports/figures/granger_raw_adjacency_heatmap.png`
+- `reports/figures/granger_fdr_adjacency_heatmap.png`
 
 ## Automation
 
