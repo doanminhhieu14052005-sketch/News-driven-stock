@@ -77,6 +77,19 @@ Granger causality, lead-lag, and network comparison steps.
 Missing news is kept as `NaN`, not filled with zero. Missing sentiment is not
 treated as neutral.
 
+## Module 9 - Merge Daily Sentiment with Sector Returns
+
+Location:
+
+`module9_merge_sentiment_return/merge_sentiment_return.py`
+
+Module 9 merges daily sector sentiment with sector returns using the common
+trading-date window. It creates merged wide/long datasets and a coverage report
+for downstream Granger causality and network analysis.
+
+Missing sentiment is kept as `NaN`, not filled with zero. Missing returns are
+also preserved.
+
 ## Local Run
 
 Run from the repository root:
@@ -87,6 +100,7 @@ python module6_session_bucket/export_cafef_from_mongo.py --output data/raw/artic
 python module6_session_bucket/session_mapper.py --articles-input data/raw/articles.csv --trading-calendar VNStock/data/processed/daily_sector_price_wide.csv --output data/processed/articles_session_mapped.csv
 python module7_sector_sentiment/cafef_sector_sentiment_mapper.py --input data/processed/articles_session_mapped.csv --output data/processed/cafef_articles_labeled.csv --long-output data/processed/cafef_article_sector_long.csv
 python module8_daily_sentiment/daily_sector_sentiment_aggregator.py --input data/processed/cafef_article_sector_long.csv --output-long data/processed/daily_sector_sentiment_long.csv --output-wide data/processed/daily_sector_sentiment_wide.csv
+python module9_merge_sentiment_return/merge_sentiment_return.py --price-wide VNStock/data/processed/daily_sector_price_wide.csv --sentiment-wide data/processed/daily_sector_sentiment_wide.csv --sentiment-long data/processed/daily_sector_sentiment_long.csv --output-wide data/processed/merged_sentiment_return_wide.csv --output-long data/processed/merged_sentiment_return_long.csv --coverage-report data/processed/merge_coverage_report.csv
 ```
 
 ## GitHub Secrets
@@ -110,6 +124,9 @@ Git.
 - `data/processed/cafef_article_sector_long.csv`
 - `data/processed/daily_sector_sentiment_long.csv`
 - `data/processed/daily_sector_sentiment_wide.csv`
+- `data/processed/merged_sentiment_return_wide.csv`
+- `data/processed/merged_sentiment_return_long.csv`
+- `data/processed/merge_coverage_report.csv`
 
 ## Automation
 

@@ -54,6 +54,10 @@ jobs:
         run: |
           python module8_daily_sentiment/daily_sector_sentiment_aggregator.py --input data/processed/cafef_article_sector_long.csv --output-long data/processed/daily_sector_sentiment_long.csv --output-wide data/processed/daily_sector_sentiment_wide.csv
 
+      - name: Run Module 9 merge sentiment and returns
+        run: |
+          python module9_merge_sentiment_return/merge_sentiment_return.py --price-wide VNStock/data/processed/daily_sector_price_wide.csv --sentiment-wide data/processed/daily_sector_sentiment_wide.csv --sentiment-long data/processed/daily_sector_sentiment_long.csv --output-wide data/processed/merged_sentiment_return_wide.csv --output-long data/processed/merged_sentiment_return_long.csv --coverage-report data/processed/merge_coverage_report.csv
+
       - name: Verify pipeline outputs
         run: |
           test -f VNStock/data/processed/daily_sector_price_wide.csv
@@ -63,6 +67,9 @@ jobs:
           test -f data/processed/cafef_article_sector_long.csv
           test -f data/processed/daily_sector_sentiment_long.csv
           test -f data/processed/daily_sector_sentiment_wide.csv
+          test -f data/processed/merged_sentiment_return_wide.csv
+          test -f data/processed/merged_sentiment_return_long.csv
+          test -f data/processed/merge_coverage_report.csv
           python - << 'PY'
           import pandas as pd
 
@@ -73,6 +80,9 @@ jobs:
           sector_long = pd.read_csv("data/processed/cafef_article_sector_long.csv", encoding="utf-8-sig")
           sentiment_long = pd.read_csv("data/processed/daily_sector_sentiment_long.csv", encoding="utf-8-sig")
           sentiment_wide = pd.read_csv("data/processed/daily_sector_sentiment_wide.csv", encoding="utf-8-sig")
+          merged_wide = pd.read_csv("data/processed/merged_sentiment_return_wide.csv", encoding="utf-8-sig")
+          merged_long = pd.read_csv("data/processed/merged_sentiment_return_long.csv", encoding="utf-8-sig")
+          coverage = pd.read_csv("data/processed/merge_coverage_report.csv", encoding="utf-8-sig")
 
           print("price wide shape:", wide.shape)
           print("price long shape:", long.shape)
@@ -81,6 +91,9 @@ jobs:
           print("cafef_article_sector_long shape:", sector_long.shape)
           print("daily_sector_sentiment_long shape:", sentiment_long.shape)
           print("daily_sector_sentiment_wide shape:", sentiment_wide.shape)
+          print("merged wide shape:", merged_wide.shape)
+          print("merged long shape:", merged_long.shape)
+          print("coverage report shape:", coverage.shape)
 
           wide["trade_date"] = pd.to_datetime(wide["trade_date"], errors="coerce")
           price_dates = wide["trade_date"].dropna()
@@ -136,6 +149,24 @@ jobs:
           print("daily sentiment wide sample:")
           print(sentiment_wide.head().to_string(index=False))
 
+          if "trade_date" not in merged_wide.columns:
+              raise RuntimeError("Missing trade_date in merged_sentiment_return_wide.csv")
+          merged_wide["trade_date"] = pd.to_datetime(merged_wide["trade_date"], errors="coerce")
+          merged_dates = merged_wide["trade_date"].dropna()
+          if len(merged_dates) == 0:
+              raise RuntimeError("No valid trade_date found in merged_sentiment_return_wide.csv")
+          ret_cols = [column for column in merged_wide.columns if column.startswith("ret_")]
+          sent_cols = [column for column in merged_wide.columns if column.startswith("sent_")]
+          print("merged date range:", merged_dates.min().date(), "->", merged_dates.max().date())
+          print("merged return missing ratio:", merged_wide[ret_cols].isna().mean().mean())
+          print("merged sentiment missing ratio:", merged_wide[sent_cols].isna().mean().mean())
+          print("merged wide sample:")
+          print(merged_wide.head().to_string(index=False))
+          print("merged long sample:")
+          print(merged_long.head().to_string(index=False))
+          print("coverage report sample:")
+          print(coverage.head().to_string(index=False))
+
           print("Verification completed successfully.")
           PY
 
@@ -151,6 +182,9 @@ jobs:
           git add data/processed/cafef_article_sector_long.csv
           git add data/processed/daily_sector_sentiment_long.csv
           git add data/processed/daily_sector_sentiment_wide.csv
+          git add data/processed/merged_sentiment_return_wide.csv
+          git add data/processed/merged_sentiment_return_long.csv
+          git add data/processed/merge_coverage_report.csv
 
           if git diff --cached --quiet; then
             echo "No processed data changes to commit"
