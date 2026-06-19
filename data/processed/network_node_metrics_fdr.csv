@@ -1,0 +1,11 @@
+﻿sector_label,in_degree,out_degree,total_degree,weighted_in_degree,weighted_out_degree,weighted_total_degree,self_loop_count,pagerank,betweenness_centrality,is_net_sender,is_net_receiver
+Banking,0,0,0,0.0,0.0,0.0,0,0.0,0.0,False,False
+RealEstate,0,0,0,0.0,0.0,0.0,0,0.0,0.0,False,False
+SteelMaterials,0,0,0,0.0,0.0,0.0,0,0.0,0.0,False,False
+Technology,0,0,0,0.0,0.0,0.0,0,0.0,0.0,False,False
+ConsumerStaples,0,0,0,0.0,0.0,0.0,0,0.0,0.0,False,False
+ConsumerDiscretionary,0,0,0,0.0,0.0,0.0,0,0.0,0.0,False,False
+Energy,0,0,0,0.0,0.0,0.0,0,0.0,0.0,False,False
+IndustrialLogistics,0,0,0,0.0,0.0,0.0,0,0.0,0.0,False,False
+Healthcare,0,0,0,0.0,0.0,0.0,0,0.0,0.0,False,False
+Utilities,0,0,0,0.0,0.0,0.0,0,0.0,0.0,False,False
