@@ -64,6 +64,19 @@ and is not used in sector-level aggregation. Broad market or macroeconomic news
 is marked `MarketMacro` at article level and also excluded from 10-sector
 aggregation.
 
+## Module 8 - Daily Sector Sentiment Aggregation
+
+Location:
+
+`module8_daily_sentiment/daily_sector_sentiment_aggregator.py`
+
+Module 8 aggregates article-sector sentiment from Module 7 into daily
+sector-level sentiment time series. It creates long and wide outputs for later
+Granger causality, lead-lag, and network comparison steps.
+
+Missing news is kept as `NaN`, not filled with zero. Missing sentiment is not
+treated as neutral.
+
 ## Local Run
 
 Run from the repository root:
@@ -73,6 +86,7 @@ python VNStock/module5_vnstock_price.py --output-dir VNStock/data/processed
 python module6_session_bucket/export_cafef_from_mongo.py --output data/raw/articles.csv
 python module6_session_bucket/session_mapper.py --articles-input data/raw/articles.csv --trading-calendar VNStock/data/processed/daily_sector_price_wide.csv --output data/processed/articles_session_mapped.csv
 python module7_sector_sentiment/cafef_sector_sentiment_mapper.py --input data/processed/articles_session_mapped.csv --output data/processed/cafef_articles_labeled.csv --long-output data/processed/cafef_article_sector_long.csv
+python module8_daily_sentiment/daily_sector_sentiment_aggregator.py --input data/processed/cafef_article_sector_long.csv --output-long data/processed/daily_sector_sentiment_long.csv --output-wide data/processed/daily_sector_sentiment_wide.csv
 ```
 
 ## GitHub Secrets
@@ -94,6 +108,8 @@ Git.
 - `data/processed/articles_session_mapped.csv`
 - `data/processed/cafef_articles_labeled.csv`
 - `data/processed/cafef_article_sector_long.csv`
+- `data/processed/daily_sector_sentiment_long.csv`
+- `data/processed/daily_sector_sentiment_wide.csv`
 
 ## Automation
 

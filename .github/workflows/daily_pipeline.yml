@@ -50,6 +50,10 @@ jobs:
         run: |
           python module7_sector_sentiment/cafef_sector_sentiment_mapper.py --input data/processed/articles_session_mapped.csv --output data/processed/cafef_articles_labeled.csv --long-output data/processed/cafef_article_sector_long.csv
 
+      - name: Run Module 8 daily sector sentiment aggregation
+        run: |
+          python module8_daily_sentiment/daily_sector_sentiment_aggregator.py --input data/processed/cafef_article_sector_long.csv --output-long data/processed/daily_sector_sentiment_long.csv --output-wide data/processed/daily_sector_sentiment_wide.csv
+
       - name: Verify pipeline outputs
         run: |
           test -f VNStock/data/processed/daily_sector_price_wide.csv
@@ -57,6 +61,8 @@ jobs:
           test -f data/processed/articles_session_mapped.csv
           test -f data/processed/cafef_articles_labeled.csv
           test -f data/processed/cafef_article_sector_long.csv
+          test -f data/processed/daily_sector_sentiment_long.csv
+          test -f data/processed/daily_sector_sentiment_wide.csv
           python - << 'PY'
           import pandas as pd
 
@@ -65,12 +71,16 @@ jobs:
           mapped = pd.read_csv("data/processed/articles_session_mapped.csv", encoding="utf-8-sig")
           labeled = pd.read_csv("data/processed/cafef_articles_labeled.csv", encoding="utf-8-sig")
           sector_long = pd.read_csv("data/processed/cafef_article_sector_long.csv", encoding="utf-8-sig")
+          sentiment_long = pd.read_csv("data/processed/daily_sector_sentiment_long.csv", encoding="utf-8-sig")
+          sentiment_wide = pd.read_csv("data/processed/daily_sector_sentiment_wide.csv", encoding="utf-8-sig")
 
           print("price wide shape:", wide.shape)
           print("price long shape:", long.shape)
           print("mapped articles shape:", mapped.shape)
           print("cafef_articles_labeled shape:", labeled.shape)
           print("cafef_article_sector_long shape:", sector_long.shape)
+          print("daily_sector_sentiment_long shape:", sentiment_long.shape)
+          print("daily_sector_sentiment_wide shape:", sentiment_wide.shape)
 
           wide["trade_date"] = pd.to_datetime(wide["trade_date"], errors="coerce")
           price_dates = wide["trade_date"].dropna()
@@ -111,6 +121,21 @@ jobs:
           if "sector_label" in labeled.columns:
               print("unmapped article count:", int((labeled["sector_label"] == "Unmapped").sum()))
 
+          if "trade_date" not in sentiment_wide.columns:
+              raise RuntimeError("Missing trade_date in daily_sector_sentiment_wide.csv")
+          sentiment_wide["trade_date"] = pd.to_datetime(sentiment_wide["trade_date"], errors="coerce")
+          sentiment_dates = sentiment_wide["trade_date"].dropna()
+          if len(sentiment_dates) == 0:
+              raise RuntimeError("No valid trade_date found in daily_sector_sentiment_wide.csv")
+          print("sentiment date range:", sentiment_dates.min().date(), "->", sentiment_dates.max().date())
+          sentiment_sector_columns = [column for column in sentiment_wide.columns if column != "trade_date"]
+          print("sentiment sector columns:", sentiment_sector_columns)
+          print("sentiment missing ratio:", sentiment_wide[sentiment_sector_columns].isna().mean().mean())
+          print("daily sentiment long sample:")
+          print(sentiment_long.head().to_string(index=False))
+          print("daily sentiment wide sample:")
+          print(sentiment_wide.head().to_string(index=False))
+
           print("Verification completed successfully.")
           PY
 
@@ -124,6 +149,8 @@ jobs:
           git add data/processed/articles_session_mapped.csv
           git add data/processed/cafef_articles_labeled.csv
           git add data/processed/cafef_article_sector_long.csv
+          git add data/processed/daily_sector_sentiment_long.csv
+          git add data/processed/daily_sector_sentiment_wide.csv
 
           if git diff --cached --quiet; then
             echo "No processed data changes to commit"
