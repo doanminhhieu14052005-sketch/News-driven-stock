@@ -58,6 +58,10 @@ jobs:
         run: |
           python module9_merge_sentiment_return/merge_sentiment_return.py --price-wide VNStock/data/processed/daily_sector_price_wide.csv --sentiment-wide data/processed/daily_sector_sentiment_wide.csv --sentiment-long data/processed/daily_sector_sentiment_long.csv --output-wide data/processed/merged_sentiment_return_wide.csv --output-long data/processed/merged_sentiment_return_long.csv --coverage-report data/processed/merge_coverage_report.csv
 
+      - name: Run Module 10 Granger causality
+        run: |
+          python module10_granger/granger_causality.py --input data/processed/merged_sentiment_return_wide.csv --stationarity-output data/processed/stationarity_tests.csv --all-lags-output data/processed/granger_all_lags.csv --results-output data/processed/granger_results.csv --pvalue-matrix-output data/processed/granger_pvalue_matrix.csv --fdr-matrix-output data/processed/granger_fdr_matrix.csv --adjacency-output data/processed/granger_adjacency_matrix.csv --edge-list-output data/processed/granger_edge_list.csv --max-lag 5 --min-observations 60 --alpha 0.05
+
       - name: Verify pipeline outputs
         run: |
           test -f VNStock/data/processed/daily_sector_price_wide.csv
@@ -70,6 +74,13 @@ jobs:
           test -f data/processed/merged_sentiment_return_wide.csv
           test -f data/processed/merged_sentiment_return_long.csv
           test -f data/processed/merge_coverage_report.csv
+          test -f data/processed/stationarity_tests.csv
+          test -f data/processed/granger_all_lags.csv
+          test -f data/processed/granger_results.csv
+          test -f data/processed/granger_pvalue_matrix.csv
+          test -f data/processed/granger_fdr_matrix.csv
+          test -f data/processed/granger_adjacency_matrix.csv
+          test -f data/processed/granger_edge_list.csv
           python - << 'PY'
           import pandas as pd
 
@@ -83,6 +94,13 @@ jobs:
           merged_wide = pd.read_csv("data/processed/merged_sentiment_return_wide.csv", encoding="utf-8-sig")
           merged_long = pd.read_csv("data/processed/merged_sentiment_return_long.csv", encoding="utf-8-sig")
           coverage = pd.read_csv("data/processed/merge_coverage_report.csv", encoding="utf-8-sig")
+          stationarity = pd.read_csv("data/processed/stationarity_tests.csv", encoding="utf-8-sig")
+          all_lags = pd.read_csv("data/processed/granger_all_lags.csv", encoding="utf-8-sig")
+          granger_results = pd.read_csv("data/processed/granger_results.csv", encoding="utf-8-sig")
+          pvalue_matrix = pd.read_csv("data/processed/granger_pvalue_matrix.csv", encoding="utf-8-sig")
+          fdr_matrix = pd.read_csv("data/processed/granger_fdr_matrix.csv", encoding="utf-8-sig")
+          adjacency_matrix = pd.read_csv("data/processed/granger_adjacency_matrix.csv", encoding="utf-8-sig")
+          edge_list = pd.read_csv("data/processed/granger_edge_list.csv", encoding="utf-8-sig")
 
           print("price wide shape:", wide.shape)
           print("price long shape:", long.shape)
@@ -94,6 +112,13 @@ jobs:
           print("merged wide shape:", merged_wide.shape)
           print("merged long shape:", merged_long.shape)
           print("coverage report shape:", coverage.shape)
+          print("stationarity tests shape:", stationarity.shape)
+          print("granger all lags shape:", all_lags.shape)
+          print("granger results shape:", granger_results.shape)
+          print("granger pvalue matrix shape:", pvalue_matrix.shape)
+          print("granger fdr matrix shape:", fdr_matrix.shape)
+          print("granger adjacency matrix shape:", adjacency_matrix.shape)
+          print("granger edge list shape:", edge_list.shape)
 
           wide["trade_date"] = pd.to_datetime(wide["trade_date"], errors="coerce")
           price_dates = wide["trade_date"].dropna()
@@ -166,6 +191,13 @@ jobs:
           print(merged_long.head().to_string(index=False))
           print("coverage report sample:")
           print(coverage.head().to_string(index=False))
+          if "significant_fdr_05" in granger_results.columns:
+              print("granger significant FDR edge count:", int(granger_results["significant_fdr_05"].sum()))
+          if not edge_list.empty:
+              print("top Granger edges:")
+              print(edge_list.head(10).to_string(index=False))
+          else:
+              print("top Granger edges: none")
 
           print("Verification completed successfully.")
           PY
@@ -185,6 +217,13 @@ jobs:
           git add data/processed/merged_sentiment_return_wide.csv
           git add data/processed/merged_sentiment_return_long.csv
           git add data/processed/merge_coverage_report.csv
+          git add data/processed/stationarity_tests.csv
+          git add data/processed/granger_all_lags.csv
+          git add data/processed/granger_results.csv
+          git add data/processed/granger_pvalue_matrix.csv
+          git add data/processed/granger_fdr_matrix.csv
+          git add data/processed/granger_adjacency_matrix.csv
+          git add data/processed/granger_edge_list.csv
 
           if git diff --cached --quiet; then
             echo "No processed data changes to commit"

@@ -90,6 +90,25 @@ for downstream Granger causality and network analysis.
 Missing sentiment is kept as `NaN`, not filled with zero. Missing returns are
 also preserved.
 
+## Module 10 - Granger Causality Analysis
+
+Location:
+
+`module10_granger/granger_causality.py`
+
+Module 10 runs Augmented Dickey-Fuller stationarity diagnostics and pairwise
+Granger causality tests from sector sentiment to sector returns:
+
+`sent_<source_sector> -> ret_<target_sector>`
+
+For each source-target pair, the selected lag is the lag with the minimum
+p-value among valid lags. P-values are corrected with Benjamini-Hochberg FDR
+across successful sector pairs. Missing sentiment and return values are not
+filled; each pair is tested after pairwise `dropna()`.
+
+Granger causality here means predictive causality in a time-series sense. It
+does not prove structural or economic causality.
+
 ## Local Run
 
 Run from the repository root:
@@ -101,6 +120,7 @@ python module6_session_bucket/session_mapper.py --articles-input data/raw/articl
 python module7_sector_sentiment/cafef_sector_sentiment_mapper.py --input data/processed/articles_session_mapped.csv --output data/processed/cafef_articles_labeled.csv --long-output data/processed/cafef_article_sector_long.csv
 python module8_daily_sentiment/daily_sector_sentiment_aggregator.py --input data/processed/cafef_article_sector_long.csv --output-long data/processed/daily_sector_sentiment_long.csv --output-wide data/processed/daily_sector_sentiment_wide.csv
 python module9_merge_sentiment_return/merge_sentiment_return.py --price-wide VNStock/data/processed/daily_sector_price_wide.csv --sentiment-wide data/processed/daily_sector_sentiment_wide.csv --sentiment-long data/processed/daily_sector_sentiment_long.csv --output-wide data/processed/merged_sentiment_return_wide.csv --output-long data/processed/merged_sentiment_return_long.csv --coverage-report data/processed/merge_coverage_report.csv
+python module10_granger/granger_causality.py --input data/processed/merged_sentiment_return_wide.csv --stationarity-output data/processed/stationarity_tests.csv --all-lags-output data/processed/granger_all_lags.csv --results-output data/processed/granger_results.csv --pvalue-matrix-output data/processed/granger_pvalue_matrix.csv --fdr-matrix-output data/processed/granger_fdr_matrix.csv --adjacency-output data/processed/granger_adjacency_matrix.csv --edge-list-output data/processed/granger_edge_list.csv --max-lag 5 --min-observations 60 --alpha 0.05
 ```
 
 ## GitHub Secrets
@@ -127,6 +147,13 @@ Git.
 - `data/processed/merged_sentiment_return_wide.csv`
 - `data/processed/merged_sentiment_return_long.csv`
 - `data/processed/merge_coverage_report.csv`
+- `data/processed/stationarity_tests.csv`
+- `data/processed/granger_all_lags.csv`
+- `data/processed/granger_results.csv`
+- `data/processed/granger_pvalue_matrix.csv`
+- `data/processed/granger_fdr_matrix.csv`
+- `data/processed/granger_adjacency_matrix.csv`
+- `data/processed/granger_edge_list.csv`
 
 ## Automation
 

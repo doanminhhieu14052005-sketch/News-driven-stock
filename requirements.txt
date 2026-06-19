@@ -3,3 +3,4 @@ numpy
 vnstock
 pymongo
 python-dotenv
+statsmodels
