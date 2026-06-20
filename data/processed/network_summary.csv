@@ -1,3 +1,3 @@
 ﻿network_type,total_edges,cross_edges,self_edges,number_of_nodes,number_of_active_source_nodes,number_of_active_target_nodes,density_cross,top_sender_by_weight,top_receiver_by_weight,strongest_edge_source,strongest_edge_target,strongest_edge_weight,strongest_edge_p_value
-raw,25,22,3,10,10,9,0.24444444444444444,ConsumerDiscretionary,IndustrialLogistics,ConsumerStaples,Banking,2.5035041076040523,0.0031368654612062
-fdr,0,0,0,10,0,0,0.0,,,,,,
+raw,26,24,2,10,9,10,0.26666666666666666,ConsumerDiscretionary,Utilities,ConsumerDiscretionary,Healthcare,3.235082546102647,0.0005819925882607
+fdr,5,5,0,10,4,4,0.05555555555555555,ConsumerDiscretionary,Energy,ConsumerDiscretionary,Healthcare,1.3730810082218587,0.0423563952006491
