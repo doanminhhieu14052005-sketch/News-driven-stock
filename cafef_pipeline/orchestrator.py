@@ -38,9 +38,9 @@ def run_pipeline() -> None:
     start_time = time.time()
 
     try:
-        # Module 1: Fetch & dedup (TẠM TẮT ĐỂ TẬP TRUNG XỬ LÝ PENDING)
-        # new_urls = fetch_new_urls()
-        # logger.info(f"M1: {len(new_urls)} new URLs queued")
+        # Module 1: Fetch & dedup (cào tới mốc ~1 năm theo config)
+        new_urls = fetch_new_urls()
+        logger.info(f"M1: {len(new_urls)} new URLs queued")
 
         # Lấy pending từ DB (bao gồm cả lần trước còn sót)
         pending = get_pending_urls(limit=BATCH_SIZE)

@@ -3,3 +3,6 @@ __pycache__/
 .env
 data/
 pipeline.log
+pipeline.log.*
+a.txt
+RAG.txt

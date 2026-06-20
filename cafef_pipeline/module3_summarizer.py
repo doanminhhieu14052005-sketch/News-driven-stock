@@ -13,17 +13,18 @@ import time
 from typing import Any, Literal, Optional
 
 import httpx
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, ValidationError, field_validator, model_validator
 
 from config import (
     LLM_BACKEND, LLM_MAX_RETRIES,
     OLLAMA_BASE_URL, OLLAMA_MODEL,
-    GEMINI_API_KEY, GROQ_API_KEY, GROQ_MODEL,
+    GEMINI_API_KEY, GROQ_API_KEYS, GROQ_MODEL,
     MAX_INPUT_CHARS_OLLAMA, MAX_INPUT_CHARS_GEMINI, MAX_INPUT_CHARS_GROQ,
     VRAM_COOLDOWN_SECONDS, ENABLE_GC_CLEANUP,
 )
 
 logger = logging.getLogger(__name__)
+_groq_key_index = 0
 
 
 # ── Pydantic Schema ───────────────────────────────────────────────
@@ -32,6 +33,7 @@ class ArticleSummary(BaseModel):
     summary: list[str]          # 3 gạch đầu dòng
     tickers: list[str]          # ["FPT", "HPG"] hoặc []
     impact: Literal["Positive", "Negative", "Neutral"]
+    sentiment_score: Optional[float] = None  # điểm liên tục [-1, +1] cho Granger/lead-lag
     key_metrics: dict[str, Any] # {"Doanh thu": "1000 tỷ"} hoặc {}
     sector: Optional[str] = None  # "Ngân hàng", "Bất động sản"...
 
@@ -39,6 +41,26 @@ class ArticleSummary(BaseModel):
     @classmethod
     def uppercase_tickers(cls, v):
         return [t.upper().strip() for t in v if t.strip()]
+
+    @field_validator("sentiment_score", mode="before")
+    @classmethod
+    def coerce_score(cls, v):
+        """Ép về float trong [-1, 1]. Trả None nếu không parse được (sẽ suy ra từ impact)."""
+        if v is None or v == "":
+            return None
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return None
+        return max(-1.0, min(1.0, f))
+
+    @model_validator(mode="after")
+    def fill_score_from_impact(self):
+        """Nếu LLM quên trả sentiment_score, suy ra giá trị mặc định từ impact
+        để chuỗi sentiment luôn có số liên tục và nhất quán dấu với impact."""
+        if self.sentiment_score is None:
+            self.sentiment_score = {"Positive": 0.5, "Negative": -0.5, "Neutral": 0.0}[self.impact]
+        return self
 
     @field_validator("key_metrics", mode="before")
     @classmethod
@@ -71,6 +93,7 @@ Schema bắt buộc:
   "summary": ["điểm 1", "điểm 2", "điểm 3"],
   "tickers": ["MÃ1", "MÃ2"],
   "impact": "Positive" | "Negative" | "Neutral",
+  "sentiment_score": 0.0,
   "key_metrics": {"Chỉ số": "Giá trị"},
   "sector": "Tên ngành hoặc null"
 }
@@ -79,6 +102,7 @@ Quy tắc:
 - summary: 2–3 gạch đầu dòng, mỗi điểm dưới 25 từ
 - tickers: HỈ chứa các mã chứng khoán HOSE/HNX (viết hoa). NẾU BÀI BÁO KHÔNG ĐỀ CẬP ĐẾN MÃ CHỨNG KHOÁN NÀO, BẮT BUỘC TRẢ VỀ: "tickers": []. TUYỆT ĐỐI KHÔNG trả về null.
 - impact: đánh giá tác động đến thị trường/doanh nghiệp
+- sentiment_score: SỐ THỰC liên tục trong [-1.0, +1.0] thể hiện mức độ tích cực/tiêu cực của tin với thị trường. -1.0 = cực kỳ tiêu cực, 0.0 = trung tính, +1.0 = cực kỳ tích cực. Phải CÙNG DẤU với impact (Positive > 0, Negative < 0, Neutral ≈ 0) và phản ánh CƯỜNG ĐỘ (tin sốc mạnh gần ±1.0, tin nhẹ gần ±0.2).
 - key_metrics: chỉ trích xuất nếu bài có số liệu cụ thể
 - sector: Tên ngành liên quan. Nếu bài báo nói về vĩ mô chung chung, trả về: "sector": null.
 - KHÔNG giải thích thêm, chỉ JSON"""
@@ -100,6 +124,7 @@ def _call_ollama(text: str) -> str:
             {"role": "user", "content": USER_TEMPLATE.format(text=text[:MAX_INPUT_CHARS_OLLAMA])},
         ],
         "stream": False,
+        "format": "json",   # ép Ollama trả JSON hợp lệ -> ít lỗi parse, đỡ retry
         "options": {"temperature": 0.1},
     }
     with httpx.Client(timeout=120) as client:
@@ -128,8 +153,9 @@ def _call_gemini(text: str) -> str:
 
 def _call_groq(text: str) -> str:
     url = "https://api.groq.com/openai/v1/chat/completions"
+    current_key = GROQ_API_KEYS[_groq_key_index % len(GROQ_API_KEYS)] if GROQ_API_KEYS else ""
     headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Authorization": f"Bearer {current_key}",
         "Content-Type": "application/json"
     }
     payload = {
@@ -209,7 +235,13 @@ def summarize(raw_text: str) -> Optional[ArticleSummary]:
     else:
         call_fn = _call_groq
 
-    for attempt in range(1, LLM_MAX_RETRIES + 1):
+    global _groq_key_index
+    keys_tried_this_round = 0
+    max_retries = LLM_MAX_RETRIES
+    if LLM_BACKEND == "groq" and len(GROQ_API_KEYS) > 1:
+        max_retries = max(LLM_MAX_RETRIES, len(GROQ_API_KEYS) * 2)
+
+    for attempt in range(1, max_retries + 1):
         try:
             raw = call_fn(raw_text)
             json_str = _extract_json(raw)
@@ -226,14 +258,49 @@ def summarize(raw_text: str) -> Optional[ArticleSummary]:
                 time.sleep(5) # Tránh gọi dồn dập khi retry
         except httpx.HTTPError as e:
             error_msg = str(e).lower()
+            resp = getattr(e, "response", None)
+            status = resp.status_code if resp is not None else None
+            body = (resp.text if resp is not None else "").lower()
             logger.error(f"LLM HTTP error attempt {attempt}: {e}")
-            
+
+            # Key Groq bị khoá / không hợp lệ (400 organization_restricted, 401, 403)
+            # -> KHÔNG retry cùng key, nhảy sang key khác ngay
+            if (LLM_BACKEND == "groq" and len(GROQ_API_KEYS) > 1
+                    and status in (400, 401, 403)
+                    and ("organization_restricted" in body
+                         or "invalid_api_key" in body
+                         or "restricted" in body)):
+                keys_tried_this_round += 1
+                if keys_tried_this_round < len(GROQ_API_KEYS):
+                    _groq_key_index += 1
+                    logger.warning(
+                        f"⛔ Key Groq bị khoá/không hợp lệ. Nhảy sang key thứ "
+                        f"{(_groq_key_index % len(GROQ_API_KEYS)) + 1}. Thử lại ngay..."
+                    )
+                    continue
+                else:
+                    logger.error("💀 TẤT CẢ key Groq đều bị khoá/không hợp lệ. Bỏ qua bài này.")
+                    break
+
             # Xử lý 429 Rate Limit bằng Exponential Backoff
             if hasattr(e, "response") and e.response is not None and e.response.status_code == 429:
-                wait_time = 30 * attempt
-                logger.warning(f"⚠️ Bị giới hạn tốc độ API (429). Đang nghỉ {wait_time}s...")
-                time.sleep(wait_time)
-                continue
+                if LLM_BACKEND == "groq" and len(GROQ_API_KEYS) > 1:
+                    keys_tried_this_round += 1
+                    if keys_tried_this_round < len(GROQ_API_KEYS):
+                        _groq_key_index += 1
+                        logger.warning(f"⚠️ Bị giới hạn 429. Tự động nhảy sang Key Groq thứ {(_groq_key_index % len(GROQ_API_KEYS)) + 1}. Thử lại ngay...")
+                        continue
+                    else:
+                        keys_tried_this_round = 0
+                        wait_time = 30 * attempt
+                        logger.warning(f"⚠️ TẤT CẢ các Key đều bị 429. Đang nghỉ {wait_time}s...")
+                        time.sleep(wait_time)
+                        continue
+                else:
+                    wait_time = 30 * attempt
+                    logger.warning(f"⚠️ Bị giới hạn tốc độ API (429). Đang nghỉ {wait_time}s...")
+                    time.sleep(wait_time)
+                    continue
 
             # Phát hiện OOM → chờ VRAM giải phóng rồi retry
             if "out of memory" in error_msg or "oom" in error_msg:

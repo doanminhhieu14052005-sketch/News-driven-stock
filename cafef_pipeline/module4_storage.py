@@ -12,6 +12,7 @@ from pymongo import MongoClient, DESCENDING
 from pymongo.collection import Collection
 
 from config import MONGO_URI, MONGO_DB, MONGO_COLLECTION
+from utils import parse_published_at
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ def save_article(article: dict) -> bool:
                 "source_url":    article.get("url", ""),
                 "title":         article.get("title", ""),
                 "category":      article.get("category", ""),
-                "published_at":  article.get("published_at", ""),
+                "published_at":  parse_published_at(article.get("published_at")),
                 "raw_text":      article.get("raw_text", ""),
                 "summary_json":  article.get("summary_json"),
                 "status":        article.get("status", "done"),
