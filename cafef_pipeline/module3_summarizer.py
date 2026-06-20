@@ -95,7 +95,7 @@ Schema bắt buộc:
   "impact": "Positive" | "Negative" | "Neutral",
   "sentiment_score": 0.0,
   "key_metrics": {"Chỉ số": "Giá trị"},
-  "sector": "Tên ngành hoặc null"
+  "sector": "Một ngành trong danh sách, hoặc null"
 }
 
 Quy tắc:
@@ -104,7 +104,14 @@ Quy tắc:
 - impact: đánh giá tác động đến thị trường/doanh nghiệp
 - sentiment_score: SỐ THỰC liên tục trong [-1.0, +1.0] thể hiện mức độ tích cực/tiêu cực của tin với thị trường. -1.0 = cực kỳ tiêu cực, 0.0 = trung tính, +1.0 = cực kỳ tích cực. Phải CÙNG DẤU với impact (Positive > 0, Negative < 0, Neutral ≈ 0) và phản ánh CƯỜNG ĐỘ (tin sốc mạnh gần ±1.0, tin nhẹ gần ±0.2).
 - key_metrics: chỉ trích xuất nếu bài có số liệu cụ thể
-- sector: Tên ngành liên quan. Nếu bài báo nói về vĩ mô chung chung, trả về: "sector": null.
+- sector: Phân loại bài vào MỘT ngành, dùng CHÍNH XÁC một trong các nhãn tiếng Việt sau:
+    "Ngân hàng" | "Bất động sản" | "Thép & Vật liệu" | "Công nghệ & Viễn thông" |
+    "Hàng tiêu dùng thiết yếu" | "Bán lẻ & Tiêu dùng" | "Dầu khí" |
+    "Công nghiệp & Logistics" | "Y tế & Dược" | "Tiện ích & Điện"
+  Quy tắc chọn:
+    • Nếu bài nói về một doanh nghiệp/ngành cụ thể (kể cả khi nhắc mã cổ phiếu) -> BẮT BUỘC chọn ngành gần nhất.
+    • Gợi ý: thép/tôn/vật liệu xây dựng/hóa chất/cao su -> "Thép & Vật liệu"; cảng/hàng không/vận tải/logistics -> "Công nghiệp & Logistics"; ô tô/vàng bạc/bán lẻ -> "Bán lẻ & Tiêu dùng"; thực phẩm/đồ uống/sữa/nông nghiệp -> "Hàng tiêu dùng thiết yếu"; điện/nước/năng lượng tái tạo -> "Tiện ích & Điện".
+    • CHỈ trả "sector": null khi tin THUẦN vĩ mô/toàn thị trường (VN-Index, lãi suất, tỷ giá, chính sách chung) không gắn ngành cụ thể.
 - KHÔNG giải thích thêm, chỉ JSON"""
 
 USER_TEMPLATE = """Bài báo:
