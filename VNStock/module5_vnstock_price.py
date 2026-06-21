@@ -7,14 +7,17 @@ import logging
 import os
 import sys
 import time
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
 
-START_DATE = "2024-01-01"
-END_DATE = "2024-12-31"
+# Cửa sổ động ~1 năm kết thúc hôm nay, để khớp kỳ dữ liệu tin tức (CRAWL_LOOKBACK_DAYS=365).
+# Có thể ghi đè bằng --start-date/--end-date nếu cần cố định.
+END_DATE = date.today().isoformat()
+START_DATE = (date.today() - timedelta(days=400)).isoformat()
 INTERVAL = "1D"
 DEFAULT_OUTPUT_DIR = Path("data/processed")
 

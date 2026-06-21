@@ -31,6 +31,9 @@ STANDARD_SECTORS = [
     "Utilities",
 ]
 
+# Vùng "trung tính" quanh 0 để phân loại pos/neu/neg khi sentiment_score là số liên tục.
+NEUTRAL_EPS = 0.05
+
 LONG_COLUMNS = [
     "trade_date",
     "sector_label",
@@ -96,11 +99,12 @@ def prepare_input(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
     prepared["sentiment_score"] = pd.to_numeric(
         prepared["sentiment_score"], errors="coerce"
     )
-    invalid_scores = sorted(
-        set(prepared["sentiment_score"].dropna().unique().tolist()) - {-1.0, 0.0, 1.0}
-    )
-    if invalid_scores:
-        raise RuntimeError(f"Invalid sentiment_score values found: {invalid_scores}")
+    score_series = prepared["sentiment_score"].dropna()
+    out_of_range = score_series[(score_series < -1.0) | (score_series > 1.0)]
+    if len(out_of_range):
+        raise RuntimeError(
+            f"sentiment_score ngoài [-1, 1]: {sorted(out_of_range.unique().tolist())[:5]}"
+        )
 
     non_standard_sector = int((~prepared["sector_label"].isin(STANDARD_SECTORS)).sum())
     if non_standard_sector:
@@ -141,17 +145,17 @@ def _aggregate_group(group: pd.DataFrame) -> pd.Series:
             "sentiment_weighted_mean": (
                 weighted_sentiment_sum / valid_weight_sum if valid_weight_sum else np.nan
             ),
-            "positive_count": int((group["sentiment_score"] == 1).sum()),
-            "neutral_count": int((group["sentiment_score"] == 0).sum()),
-            "negative_count": int((group["sentiment_score"] == -1).sum()),
+            "positive_count": int((group["sentiment_score"] > NEUTRAL_EPS).sum()),
+            "neutral_count": int((group["sentiment_score"].abs() <= NEUTRAL_EPS).sum()),
+            "negative_count": int((group["sentiment_score"] < -NEUTRAL_EPS).sum()),
             "positive_weighted_count": group.loc[
-                group["sentiment_score"] == 1, "sector_weight"
+                group["sentiment_score"] > NEUTRAL_EPS, "sector_weight"
             ].sum(),
             "neutral_weighted_count": group.loc[
-                group["sentiment_score"] == 0, "sector_weight"
+                group["sentiment_score"].abs() <= NEUTRAL_EPS, "sector_weight"
             ].sum(),
             "negative_weighted_count": group.loc[
-                group["sentiment_score"] == -1, "sector_weight"
+                group["sentiment_score"] < -NEUTRAL_EPS, "sector_weight"
             ].sum(),
         }
     )

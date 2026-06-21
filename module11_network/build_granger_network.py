@@ -78,6 +78,8 @@ NODE_METRIC_COLUMNS = [
     "self_loop_count",
     "pagerank",
     "betweenness_centrality",
+    "hub_score",
+    "authority_score",
     "is_net_sender",
     "is_net_receiver",
 ]
@@ -235,9 +237,18 @@ def build_node_metrics(edges: pd.DataFrame) -> pd.DataFrame:
             logger.warning("PageRank failed, using zeros: %s", exc)
             pagerank = {sector: 0.0 for sector in STANDARD_SECTORS}
         betweenness = nx.betweenness_centrality(graph, normalized=True, weight=None)
+        try:
+            # Hub = ngành phát tán thông tin (sender); Authority = ngành nhận
+            hub_scores, authority_scores = nx.hits(graph, max_iter=1000, normalized=True)
+        except Exception as exc:  # PowerIterationFailedConvergence và edge cases khác
+            logger.warning("HITS failed, using zeros: %s", exc)
+            hub_scores = {sector: 0.0 for sector in STANDARD_SECTORS}
+            authority_scores = {sector: 0.0 for sector in STANDARD_SECTORS}
     else:
         pagerank = {sector: 0.0 for sector in STANDARD_SECTORS}
         betweenness = {sector: 0.0 for sector in STANDARD_SECTORS}
+        hub_scores = {sector: 0.0 for sector in STANDARD_SECTORS}
+        authority_scores = {sector: 0.0 for sector in STANDARD_SECTORS}
 
     rows: list[dict[str, Any]] = []
     for sector in STANDARD_SECTORS:
@@ -259,6 +270,8 @@ def build_node_metrics(edges: pd.DataFrame) -> pd.DataFrame:
                 "self_loop_count": self_loop_counts[sector],
                 "pagerank": float(pagerank.get(sector, 0.0)),
                 "betweenness_centrality": float(betweenness.get(sector, 0.0)),
+                "hub_score": float(hub_scores.get(sector, 0.0)),
+                "authority_score": float(authority_scores.get(sector, 0.0)),
                 "is_net_sender": bool(weighted_out > weighted_in),
                 "is_net_receiver": bool(weighted_in > weighted_out),
             }

@@ -11,8 +11,10 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.stats.multitest import multipletests
-from statsmodels.tsa.stattools import adfuller, grangercausalitytests
+from statsmodels.tsa.api import VAR
+from statsmodels.tsa.stattools import adfuller, grangercausalitytests, kpss
 
 
 DEFAULT_INPUT = Path("data/processed/merged_sentiment_return_wide.csv")
@@ -49,6 +51,9 @@ STATIONARITY_COLUMNS = [
     "adf_pvalue",
     "adf_used_lag",
     "adf_nobs",
+    "kpss_statistic",
+    "kpss_pvalue",
+    "kpss_stationary_5pct",
     "is_stationary_5pct",
     "status",
 ]
@@ -78,10 +83,14 @@ RESULT_COLUMNS = [
     "f_stat",
     "p_value",
     "p_value_fdr_bh",
+    "p_value_bonferroni",
     "significant_raw_05",
     "significant_fdr_05",
+    "significant_bonferroni_05",
     "alpha",
     "lag_selection_method",
+    "ljungbox_pvalue",
+    "ljungbox_white_noise",
     "status",
     "error_message",
     "edge_weight",
@@ -128,7 +137,12 @@ def _parse_bound(value: str | None, name: str) -> pd.Timestamp | None:
     return pd.Timestamp(parsed).normalize()
 
 
-def prepare_input(df: pd.DataFrame, start_date: str | None, end_date: str | None) -> pd.DataFrame:
+def prepare_input(
+    df: pd.DataFrame,
+    start_date: str | None,
+    end_date: str | None,
+    fill_missing_sentiment: bool = True,
+) -> pd.DataFrame:
     """Validate expected columns and normalize dates/numeric series."""
     if "trade_date" not in df.columns:
         raise RuntimeError("Input is missing trade_date column")
@@ -161,6 +175,12 @@ def prepare_input(df: pd.DataFrame, start_date: str | None, end_date: str | None
     prepared = prepared.sort_values("trade_date").reset_index(drop=True)
     for column in expected_columns:
         prepared[column] = pd.to_numeric(prepared[column], errors="coerce")
+
+    if fill_missing_sentiment:
+        sent_columns = [f"sent_{sector}" for sector in STANDARD_SECTORS]
+        filled = int(prepared[sent_columns].isna().sum().sum())
+        prepared[sent_columns] = prepared[sent_columns].fillna(0.0)
+        logger.info("Filled %d missing sentiment cells with 0 (neutral)", filled)
     return prepared
 
 
@@ -205,12 +225,18 @@ def run_stationarity_tests(df: pd.DataFrame, min_observations: int) -> pd.DataFr
                 continue
             try:
                 stat, pvalue, used_lag, adf_nobs, *_ = adfuller(series, autolag="AIC")
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    kpss_stat, kpss_p, *_ = kpss(series, regression="c", nlags="auto")
                 base.update(
                     {
                         "adf_statistic": stat,
                         "adf_pvalue": pvalue,
                         "adf_used_lag": used_lag,
                         "adf_nobs": adf_nobs,
+                        "kpss_statistic": kpss_stat,
+                        "kpss_pvalue": kpss_p,
+                        "kpss_stationary_5pct": bool(kpss_p > 0.05),
                         "is_stationary_5pct": bool(pvalue < 0.05),
                     }
                 )
@@ -266,10 +292,14 @@ def _empty_result_row(
         "f_stat": np.nan,
         "p_value": np.nan,
         "p_value_fdr_bh": np.nan,
+        "p_value_bonferroni": np.nan,
         "significant_raw_05": False,
         "significant_fdr_05": False,
+        "significant_bonferroni_05": False,
         "alpha": alpha,
-        "lag_selection_method": "min_pvalue",
+        "lag_selection_method": "var_aic",
+        "ljungbox_pvalue": np.nan,
+        "ljungbox_white_noise": False,
         "status": status,
         "error_message": error_message,
         "edge_weight": np.nan,
@@ -282,23 +312,65 @@ def _effective_max_lag(n_obs: int, requested_max_lag: int) -> int:
     return int(min(requested_max_lag, safe_lag))
 
 
+def _select_lag_aic(pair_df: pd.DataFrame, max_lag: int) -> int:
+    """Chọn lag tối ưu cho VAR bằng AIC (thay vì chọn lag có p-value nhỏ nhất)."""
+    if max_lag < 1:
+        return 1
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            order = VAR(pair_df).select_order(maxlags=max_lag)
+        selected = int(getattr(order, "aic", 0) or 0)
+    except Exception:
+        selected = 0
+    return selected if selected >= 1 else 1
+
+
+def _ljungbox_white_noise(
+    pair_df: pd.DataFrame, lag: int, alpha: float = 0.05
+) -> tuple[float, bool]:
+    """Fit VAR(lag) rồi Ljung-Box trên residual. Trả (min p-value, residual có là white noise)."""
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            var_res = VAR(pair_df).fit(lag)
+            resid = var_res.resid
+            lb_lags = min(10, max(1, len(resid) // 5))
+            pvals = [
+                float(
+                    acorr_ljungbox(resid[column], lags=[lb_lags], return_df=True)[
+                        "lb_pvalue"
+                    ].iloc[-1]
+                )
+                for column in resid.columns
+            ]
+        if not pvals:
+            return np.nan, False
+        min_p = min(pvals)
+        return min_p, bool(min_p > alpha)
+    except Exception:
+        return np.nan, False
+
+
 def run_granger_tests(
     df: pd.DataFrame,
     max_lag: int,
     min_observations: int,
     alpha: float,
     exclude_self: bool,
+    source_prefix: str = "sent",
+    target_prefix: str = "ret",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Run sent_source -> ret_target Granger tests for all sector pairs."""
+    """Run {source_prefix}_X -> {target_prefix}_Y Granger tests for all sector pairs."""
     all_lag_rows: list[dict[str, Any]] = []
     result_rows: list[dict[str, Any]] = []
 
     for source_sector in STANDARD_SECTORS:
-        source_variable = f"sent_{source_sector}"
+        source_variable = f"{source_prefix}_{source_sector}"
         for target_sector in STANDARD_SECTORS:
             if exclude_self and source_sector == target_sector:
                 continue
-            target_variable = f"ret_{target_sector}"
+            target_variable = f"{target_prefix}_{target_sector}"
             pair_df = df[[target_variable, source_variable]].dropna()
             n_obs = len(pair_df)
 
@@ -413,7 +485,16 @@ def run_granger_tests(
                     all_lag_rows.append(row)
                     valid_lags.append(row)
 
-                best = min(valid_lags, key=lambda item: item["p_value"])
+                best_lag = _select_lag_aic(
+                    pair_df[[target_variable, source_variable]], effective_lag
+                )
+                best = next(
+                    (row for row in valid_lags if row["lag"] == best_lag),
+                    min(valid_lags, key=lambda item: item["lag"]),
+                )
+                ljung_p, white_noise = _ljungbox_white_noise(
+                    pair_df[[target_variable, source_variable]], best["lag"]
+                )
                 result_rows.append(
                     {
                         "source_sector": source_sector,
@@ -425,10 +506,14 @@ def run_granger_tests(
                         "f_stat": best["f_stat"],
                         "p_value": best["p_value"],
                         "p_value_fdr_bh": np.nan,
+                        "p_value_bonferroni": np.nan,
                         "significant_raw_05": bool(best["p_value"] < alpha),
                         "significant_fdr_05": False,
+                        "significant_bonferroni_05": False,
                         "alpha": alpha,
-                        "lag_selection_method": "min_pvalue",
+                        "lag_selection_method": "var_aic",
+                        "ljungbox_pvalue": ljung_p,
+                        "ljungbox_white_noise": white_noise,
                         "status": "ok",
                         "error_message": "",
                         "edge_weight": np.nan,
@@ -484,10 +569,18 @@ def apply_fdr_correction(results: pd.DataFrame, alpha: float) -> pd.DataFrame:
         )
         corrected.loc[ok_mask, "p_value_fdr_bh"] = pvals_corrected
         corrected.loc[ok_mask, "significant_fdr_05"] = rejected
+        bonf_rejected, bonf_pvals, _, _ = multipletests(
+            corrected.loc[ok_mask, "p_value"].astype(float),
+            alpha=alpha,
+            method="bonferroni",
+        )
+        corrected.loc[ok_mask, "p_value_bonferroni"] = bonf_pvals
+        corrected.loc[ok_mask, "significant_bonferroni_05"] = bonf_rejected
         clipped = np.clip(pvals_corrected, 1e-12, 1.0)
         corrected.loc[ok_mask, "edge_weight"] = -np.log10(clipped)
     corrected["significant_raw_05"] = corrected["p_value"].lt(alpha).fillna(False)
     corrected["significant_fdr_05"] = corrected["significant_fdr_05"].fillna(False)
+    corrected["significant_bonferroni_05"] = corrected["significant_bonferroni_05"].fillna(False)
     return corrected[RESULT_COLUMNS]
 
 
@@ -595,7 +688,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-lag", type=int, default=5)
     parser.add_argument("--min-observations", type=int, default=60)
     parser.add_argument("--alpha", type=float, default=0.05)
-    parser.add_argument("--exclude-self", action="store_true")
+    parser.add_argument(
+        "--mode",
+        choices=["sent2sent", "sent2ret"],
+        default="sent2sent",
+        help="sent2sent: RQ1 mạng lan truyền sentiment; sent2ret: RQ3 sentiment->return",
+    )
+    parser.add_argument(
+        "--include-self", action="store_true", help="giữ self-pairs (mặc định loại, đúng 90 cặp)"
+    )
+    parser.add_argument(
+        "--no-fill-missing", action="store_true", help="KHÔNG điền sentiment thiếu = 0 (neutral)"
+    )
     parser.add_argument("--start-date", default=None)
     parser.add_argument("--end-date", default=None)
     return parser.parse_args()
@@ -611,15 +715,30 @@ def main() -> int:
         if not (0 < args.alpha < 1):
             raise RuntimeError("--alpha must be between 0 and 1")
 
+        exclude_self = not args.include_self
+        target_prefix = "sent" if args.mode == "sent2sent" else "ret"
+
+        def _mode_path(path: Path) -> Path:
+            if args.mode == "sent2ret":
+                return path.with_name(f"{path.stem}_sent2ret{path.suffix}")
+            return path
+
         raw_df = read_input(args.input)
-        df = prepare_input(raw_df, args.start_date, args.end_date)
+        df = prepare_input(
+            raw_df,
+            args.start_date,
+            args.end_date,
+            fill_missing_sentiment=not args.no_fill_missing,
+        )
         stationarity = run_stationarity_tests(df, args.min_observations)
         all_lags, results = run_granger_tests(
             df,
             args.max_lag,
             args.min_observations,
             args.alpha,
-            args.exclude_self,
+            exclude_self,
+            source_prefix="sent",
+            target_prefix=target_prefix,
         )
         pvalue_matrix = build_matrix(results, "p_value")
         fdr_matrix = build_matrix(results, "p_value_fdr_bh")
@@ -632,16 +751,16 @@ def main() -> int:
             fdr_matrix,
             adjacency_matrix,
             edge_list,
-            args.exclude_self,
+            exclude_self,
         )
 
         write_csv(stationarity, args.stationarity_output)
-        write_csv(all_lags, args.all_lags_output)
-        write_csv(results, args.results_output)
-        write_csv(pvalue_matrix, args.pvalue_matrix_output)
-        write_csv(fdr_matrix, args.fdr_matrix_output)
-        write_csv(adjacency_matrix, args.adjacency_output)
-        write_csv(edge_list, args.edge_list_output)
+        write_csv(all_lags, _mode_path(args.all_lags_output))
+        write_csv(results, _mode_path(args.results_output))
+        write_csv(pvalue_matrix, _mode_path(args.pvalue_matrix_output))
+        write_csv(fdr_matrix, _mode_path(args.fdr_matrix_output))
+        write_csv(adjacency_matrix, _mode_path(args.adjacency_output))
+        write_csv(edge_list, _mode_path(args.edge_list_output))
         print_summary(
             df,
             stationarity,

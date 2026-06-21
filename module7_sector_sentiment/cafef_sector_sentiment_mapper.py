@@ -181,6 +181,19 @@ def map_sentiment(value: Any) -> tuple[Any, str | None, float, bool]:
     return raw, None, np.nan, False
 
 
+def coerce_continuous_score(value: Any) -> float | None:
+    """Lấy sentiment_score liên tục [-1, 1] từ LLM; None nếu thiếu/không hợp lệ."""
+    if _is_missing(value):
+        return None
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        return None
+    if np.isnan(score):
+        return None
+    return max(-1.0, min(1.0, score))
+
+
 def parse_ticker_list(value: Any) -> list[str]:
     if _is_missing(value):
         return []
@@ -222,6 +235,16 @@ def get_ticker_raw(row: pd.Series) -> Any:
     return summary.get("tickers")
 
 
+def _contains_keyword(normalized_text: str, keyword: str) -> bool:
+    """Khớp keyword theo BIÊN TỪ (word boundary) để tránh false positive khi bỏ dấu.
+    Vd 'khi' (khí) không còn dính trong 'khich'/'khien', 'xe'/'nuoc'/'dien' không dính
+    trong từ dài hơn."""
+    kw = _normalize_text(keyword)
+    if not kw:
+        return False
+    return re.search(rf"(?<!\w){re.escape(kw)}(?!\w)", normalized_text) is not None
+
+
 def match_sector_keywords(text: Any) -> list[str]:
     normalized_text = _normalize_text(text)
     if not normalized_text:
@@ -230,7 +253,7 @@ def match_sector_keywords(text: Any) -> list[str]:
     matched: list[str] = []
     for sector, keywords in SECTOR_KEYWORDS.items():
         for keyword in keywords:
-            if _normalize_text(keyword) in normalized_text:
+            if _contains_keyword(normalized_text, keyword):
                 matched.append(sector)
                 break
     return matched
@@ -240,7 +263,7 @@ def is_macro_text(text: Any) -> bool:
     normalized_text = _normalize_text(text)
     if not normalized_text:
         return False
-    return any(_normalize_text(keyword) in normalized_text for keyword in MACRO_KEYWORDS)
+    return any(_contains_keyword(normalized_text, keyword) for keyword in MACRO_KEYWORDS)
 
 
 def build_fallback_text(row: pd.Series) -> str:
@@ -374,10 +397,23 @@ def build_article_output(df: pd.DataFrame) -> pd.DataFrame:
         columns=[
             "impact_raw",
             "sentiment_label",
-            "sentiment_score",
+            "sentiment_score_impact",
             "is_sentiment_mapped",
         ],
         index=result.index,
+    )
+    # Ưu tiên sentiment_score LIÊN TỤC từ LLM (-1..1); fallback điểm rời rạc từ impact
+    continuous_score = result.apply(
+        lambda row: coerce_continuous_score(
+            get_summary_field(row, "summary_json.sentiment_score", "sentiment_score")
+        ),
+        axis=1,
+    )
+    sentiment_df["sentiment_score"] = continuous_score.where(
+        continuous_score.notna(), sentiment_df["sentiment_score_impact"]
+    )
+    sentiment_df["sentiment_score_source"] = np.where(
+        continuous_score.notna(), "llm_continuous", "impact_fallback"
     )
 
     sector_df = pd.DataFrame(result.apply(map_sector, axis=1).tolist(), index=result.index)
@@ -409,10 +445,12 @@ def build_long_output(article_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def validate_outputs(article_df: pd.DataFrame, long_df: pd.DataFrame) -> None:
-    scores = set(article_df["sentiment_score"].dropna().unique().tolist())
-    allowed_scores = {-1.0, 0.0, 1.0}
-    if not scores.issubset(allowed_scores):
-        raise RuntimeError(f"Invalid sentiment_score values found: {sorted(scores)}")
+    scores = pd.to_numeric(article_df["sentiment_score"], errors="coerce").dropna()
+    out_of_range = scores[(scores < -1.0) | (scores > 1.0)]
+    if len(out_of_range):
+        raise RuntimeError(
+            f"sentiment_score ngoài [-1, 1]: {sorted(out_of_range.unique().tolist())[:5]}"
+        )
 
     if not long_df.empty:
         invalid_long_sectors = sorted(set(long_df["sector_label"]) - set(STANDARD_SECTORS))
@@ -431,8 +469,11 @@ def print_summary(input_df: pd.DataFrame, article_df: pd.DataFrame, long_df: pd.
     print("input shape:", input_df.shape)
     print("article-level output shape:", article_df.shape)
     print("long output shape:", long_df.shape)
-    print("sentiment distribution:")
-    print(article_df["sentiment_score"].value_counts(dropna=False).to_string())
+    print("sentiment_score distribution:")
+    print(article_df["sentiment_score"].describe().to_string())
+    if "sentiment_score_source" in article_df.columns:
+        print("sentiment_score source:")
+        print(article_df["sentiment_score_source"].value_counts(dropna=False).to_string())
     print("sector_labels distribution:")
     print(article_df["sector_label"].value_counts(dropna=False).to_string())
     print("sector_mapping_method distribution:")

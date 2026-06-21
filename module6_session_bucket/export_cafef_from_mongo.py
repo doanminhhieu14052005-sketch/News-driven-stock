@@ -56,6 +56,7 @@ def _normalize_document(document: dict[str, Any]) -> dict[str, Any]:
         "category": document.get("category"),
         "summary_json": _json_string(document.get("summary_json")),
         "summary_json.impact": summary_json.get("impact"),
+        "summary_json.sentiment_score": summary_json.get("sentiment_score"),
         "summary_json.sector": summary_json.get("sector"),
         "summary_json.tickers": _json_string(summary_json.get("tickers")),
     }
