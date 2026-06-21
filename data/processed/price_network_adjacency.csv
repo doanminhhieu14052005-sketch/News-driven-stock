@@ -1,0 +1,11 @@
+﻿source_sector,Banking,RealEstate,SteelMaterials,Technology,ConsumerStaples,ConsumerDiscretionary,Energy,IndustrialLogistics,Healthcare,Utilities
+Banking,0,0,0,1,1,1,0,0,0,0
+RealEstate,0,0,0,0,0,0,0,0,0,0
+SteelMaterials,0,0,0,0,1,1,0,1,0,0
+Technology,1,0,0,0,0,0,0,1,0,0
+ConsumerStaples,1,0,1,0,0,1,0,1,0,0
+ConsumerDiscretionary,1,0,1,0,1,0,0,1,0,0
+Energy,0,0,0,0,0,0,0,0,0,0
+IndustrialLogistics,0,0,1,1,1,1,0,0,0,1
+Healthcare,0,0,0,0,0,0,0,0,0,0
+Utilities,0,0,0,0,0,0,0,1,0,0

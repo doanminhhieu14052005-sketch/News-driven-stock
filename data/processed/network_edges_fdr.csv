@@ -1,6 +1,1 @@
 ﻿source,target,source_sector,target_sector,best_lag,p_value,p_value_fdr_bh,f_stat,n_obs,edge_weight,edge_type,is_self_edge,significance_type
-ConsumerDiscretionary,Healthcare,ConsumerDiscretionary,Healthcare,1,0.0005819925882607,0.0423563952006491,12.148373812452862,249,1.3730810082218587,cross,False,fdr
-ConsumerDiscretionary,Technology,ConsumerDiscretionary,Technology,3,0.0010129228717633,0.0423563952006491,5.5891474227801945,249,1.3730810082218587,cross,False,fdr
-Healthcare,Energy,Healthcare,Energy,1,0.0012706918560194,0.0423563952006491,10.76111760527697,165,1.3730810082218587,cross,False,fdr
-Banking,SteelMaterials,Banking,SteelMaterials,5,0.0022000234999041,0.0440004699980821,3.888417445466716,214,1.3565426845028261,cross,False,fdr
-IndustrialLogistics,Energy,IndustrialLogistics,Energy,4,0.002079164709789,0.0440004699980821,4.344096481849518,249,1.3565426845028261,cross,False,fdr

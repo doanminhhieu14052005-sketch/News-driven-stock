@@ -1,0 +1,14 @@
+﻿metric,value
+n_sectors,10.0
+news_edges,26.0
+price_edges,22.0
+shared_edges,4.0
+frobenius_distance,6.324555320336759
+frobenius_similarity,0.33333333333333326
+jaccard_similarity,0.09090909090909091
+pearson_corr,-0.13436724205839481
+pearson_pvalue,0.20672018343267237
+spearman_corr,-0.13436724205839484
+spearman_pvalue,0.20672018343267193
+qap_permutations,2000.0
+qap_pvalue,0.8430784607696152
