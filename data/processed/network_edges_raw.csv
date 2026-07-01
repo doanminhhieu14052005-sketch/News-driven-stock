@@ -1,8 +1,8 @@
 ﻿source,target,source_sector,target_sector,best_lag,p_value,p_value_fdr_bh,f_stat,n_obs,edge_weight,edge_type,is_self_edge,significance_type
-Utilities,SteelMaterials,Utilities,SteelMaterials,3,0.0016586082092568,0.1492747388331148,5.212670020246954,257,2.7802561894142634,cross,False,raw
-Technology,ConsumerDiscretionary,Technology,ConsumerDiscretionary,3,0.0065052781585944,0.1988233016310023,4.185577201996476,257,2.1867341287472977,cross,False,raw
-Energy,IndustrialLogistics,Energy,IndustrialLogistics,5,0.0066274433877,0.1988233016310023,3.303999911550471,257,2.178653973366956,cross,False,raw
-Energy,RealEstate,Energy,RealEstate,4,0.0121960512345973,0.2744111527784397,3.2766737436127578,257,1.913780759867812,cross,False,raw
-IndustrialLogistics,Energy,IndustrialLogistics,Energy,5,0.0179329993465329,0.3227939882375928,2.7927679002902903,257,1.7463470673418504,cross,False,raw
-ConsumerDiscretionary,Healthcare,ConsumerDiscretionary,Healthcare,1,0.0243650035930459,0.3654750538956895,5.129783822056035,257,1.6132335202383652,cross,False,raw
-SteelMaterials,Healthcare,SteelMaterials,Healthcare,1,0.0360318045562003,0.4632660585797193,4.442840455891085,257,1.4433139868595362,cross,False,raw
+Utilities,SteelMaterials,Utilities,SteelMaterials,3,0.0021174749772095,0.1905727479488608,5.028587415040488,258,2.6741817131455656,cross,False,raw
+Energy,IndustrialLogistics,Energy,IndustrialLogistics,5,0.0108140947185195,0.3804873155650726,3.053526754394356,258,1.9660098308441556,cross,False,raw
+IndustrialLogistics,Energy,IndustrialLogistics,Energy,5,0.0158479367538317,0.3804873155650726,2.8565867833404277,258,1.8000272706545615,cross,False,raw
+Technology,ConsumerDiscretionary,Technology,ConsumerDiscretionary,3,0.0169105473584476,0.3804873155650726,3.46512814689147,258,1.7718423349861605,cross,False,raw
+IndustrialLogistics,Banking,IndustrialLogistics,Banking,1,0.0320095889372308,0.4291083536016803,4.64906428864486,258,1.4947199029704774,cross,False,raw
+ConsumerDiscretionary,Healthcare,ConsumerDiscretionary,Healthcare,1,0.0330137467493867,0.4291083536016803,4.595078358142632,258,1.4813051845383736,cross,False,raw
+SteelMaterials,Healthcare,SteelMaterials,Healthcare,1,0.0333750941690195,0.4291083536016803,4.576072586642856,258,1.476577500248257,cross,False,raw

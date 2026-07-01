@@ -1,3 +1,3 @@
 ﻿network_type,total_edges,cross_edges,self_edges,number_of_nodes,number_of_active_source_nodes,number_of_active_target_nodes,density_cross,top_sender_by_weight,top_receiver_by_weight,strongest_edge_source,strongest_edge_target,strongest_edge_weight,strongest_edge_p_value
-raw,7,7,0,10,6,6,0.07777777777777778,Energy,Healthcare,Utilities,SteelMaterials,2.7802561894142634,0.0016586082092568
+raw,7,7,0,10,6,6,0.07777777777777778,IndustrialLogistics,Healthcare,Utilities,SteelMaterials,2.6741817131455656,0.0021174749772095
 fdr,0,0,0,10,0,0,0.0,,,,,,
