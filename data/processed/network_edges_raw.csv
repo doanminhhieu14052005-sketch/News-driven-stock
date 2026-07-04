@@ -1,7 +1,9 @@
 ﻿source,target,source_sector,target_sector,best_lag,p_value,p_value_fdr_bh,f_stat,n_obs,edge_weight,edge_type,is_self_edge,significance_type
-Utilities,SteelMaterials,Utilities,SteelMaterials,3,0.0022984934786324,0.2068644130769204,4.965882611399035,260,2.638556724107703,cross,False,raw
-IndustrialLogistics,Energy,IndustrialLogistics,Energy,5,0.0084399881958135,0.379799468811609,3.1797391663884604,260,2.0736581607791607,cross,False,raw
-Energy,IndustrialLogistics,Energy,IndustrialLogistics,5,0.0242695170108513,0.4965801106851502,2.634305084017121,260,1.614938866503224,cross,False,raw
-SteelMaterials,Healthcare,SteelMaterials,Healthcare,1,0.0294780264213229,0.4965801106851502,4.793046136505508,260,1.5305015962207436,cross,False,raw
-IndustrialLogistics,Banking,IndustrialLogistics,Banking,1,0.035462510249146,0.4965801106851502,4.469976331215629,260,1.450230525679083,cross,False,raw
-IndustrialLogistics,Technology,IndustrialLogistics,Technology,3,0.0356256163176266,0.4965801106851502,2.8995480012673704,260,1.44823761369139,cross,False,raw
+Utilities,SteelMaterials,Utilities,SteelMaterials,3,0.0042986177131355,0.386875594182201,4.495780761063494,260,2.36667117606421,cross,False,raw
+IndustrialLogistics,Energy,IndustrialLogistics,Energy,5,0.009073595649618,0.4083118042328134,3.142762083179667,260,2.0422205782827447,cross,False,raw
+IndustrialLogistics,Technology,IndustrialLogistics,Technology,3,0.0271093836611903,0.502750630725662,3.107247382206598,260,1.5668803561040152,cross,False,raw
+Energy,IndustrialLogistics,Energy,IndustrialLogistics,5,0.029713956955933,0.502750630725662,2.528004487671615,260,1.5270395101048522,cross,False,raw
+SteelMaterials,Healthcare,SteelMaterials,Healthcare,1,0.0392111714521954,0.502750630725662,4.295637707038041,260,1.4065901827540002,cross,False,raw
+Technology,ConsumerStaples,Technology,ConsumerStaples,5,0.0427205163790058,0.502750630725662,2.3353910738183536,260,1.3693635064664518,cross,False,raw
+IndustrialLogistics,Banking,IndustrialLogistics,Banking,1,0.0439446307160725,0.502750630725662,4.099083472384952,260,1.357094180722902,cross,False,raw
+Energy,Banking,Energy,Banking,3,0.0485673681679006,0.502750630725662,2.66296546022113,260,1.313655430007022,cross,False,raw
