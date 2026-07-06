@@ -1,9 +1,9 @@
 ﻿source,target,source_sector,target_sector,best_lag,p_value,p_value_fdr_bh,f_stat,n_obs,edge_weight,edge_type,is_self_edge,significance_type
-Utilities,SteelMaterials,Utilities,SteelMaterials,3,0.0037075338140288,0.3336780432625941,4.606885146666709,260,2.4309148793611715,cross,False,raw
-IndustrialLogistics,Energy,IndustrialLogistics,Energy,5,0.0090281704650295,0.4062676709263315,3.145327427986287,260,2.0444002494034526,cross,False,raw
-Energy,IndustrialLogistics,Energy,IndustrialLogistics,5,0.0216326776006982,0.4774799091460763,2.694412426574036,260,1.6648897221125671,cross,False,raw
-IndustrialLogistics,Technology,IndustrialLogistics,Technology,5,0.0282158402592005,0.4774799091460763,2.555242854986769,260,1.5495070120428682,cross,False,raw
-IndustrialLogistics,Banking,IndustrialLogistics,Banking,1,0.0310930428390445,0.4774799091460763,4.699505746147592,260,1.507336774787228,cross,False,raw
-SteelMaterials,Healthcare,SteelMaterials,Healthcare,1,0.0396988175741922,0.4774799091460763,4.2742602304506505,260,1.4012224284673913,cross,False,raw
-SteelMaterials,Banking,SteelMaterials,Banking,2,0.0467590642553292,0.4774799091460763,3.100124960867807,260,1.3301341885455549,cross,False,raw
-Energy,Utilities,Energy,Utilities,3,0.0472398674247456,0.4774799091460763,2.684172278213808,260,1.3256913298727102,cross,False,raw
+Utilities,SteelMaterials,Utilities,SteelMaterials,3,0.0066095852057135,0.311688211715123,4.172088302792309,261,2.1798257944511525,cross,False,raw
+IndustrialLogistics,Energy,IndustrialLogistics,Energy,5,0.0096647855633594,0.311688211715123,3.110160513079647,261,2.014807777401891,cross,False,raw
+SteelMaterials,Healthcare,SteelMaterials,Healthcare,1,0.0133758403353739,0.311688211715123,6.2043076281649405,261,1.8736789239570868,cross,False,raw
+Energy,IndustrialLogistics,Energy,IndustrialLogistics,5,0.023238874359108,0.311688211715123,2.656784605786044,261,1.6337849120591363,cross,False,raw
+Energy,Utilities,Energy,Utilities,3,0.0235700391669488,0.311688211715123,3.213137890687958,261,1.6276396957966095,cross,False,raw
+IndustrialLogistics,Banking,IndustrialLogistics,Banking,1,0.0239130913350277,0.311688211715123,5.16199890445826,261,1.6213642773780652,cross,False,raw
+IndustrialLogistics,Technology,IndustrialLogistics,Technology,5,0.0242424164667317,0.311688211715123,2.6346712824152925,261,1.6154240921847562,cross,False,raw
+Technology,ConsumerStaples,Technology,ConsumerStaples,5,0.0402589490840135,0.4329409592265648,2.3668920563076705,261,1.3951375660835001,cross,False,raw
