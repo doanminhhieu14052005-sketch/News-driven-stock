@@ -1,10 +1,10 @@
 ﻿source,target,source_sector,target_sector,best_lag,p_value,p_value_fdr_bh,f_stat,n_obs,edge_weight,edge_type,is_self_edge,significance_type
 IndustrialLogistics,Energy,IndustrialLogistics,Energy,5,0.0009994978044922,0.0899548024043031,4.247623015163686,270,3.0002181555208214,cross,False,raw
 ConsumerStaples,ConsumerDiscretionary,ConsumerStaples,ConsumerDiscretionary,3,0.0078433322745245,0.2238759661964221,4.040343422925298,270,2.105499386171121,cross,False,raw
-Energy,Healthcare,Energy,Healthcare,3,0.009574548426567,0.2238759661964221,3.8904837244131416,270,2.0188816999154597,cross,False,raw
+Energy,Healthcare,Energy,Healthcare,3,0.0095745484265672,0.2238759661964221,3.8904837244131296,270,2.018881699915451,cross,False,raw
 Utilities,SteelMaterials,Utilities,SteelMaterials,3,0.0099500429420632,0.2238759661964221,3.861562710710121,270,2.002175044936602,cross,False,raw
-Energy,IndustrialLogistics,Energy,IndustrialLogistics,5,0.0252957981852329,0.3534070823812356,2.6105405247180875,270,1.5969516122833616,cross,False,raw
+Energy,IndustrialLogistics,Energy,IndustrialLogistics,5,0.0252957981852324,0.3534070823812356,2.610540524718099,270,1.5969516122833702,cross,False,raw
 Energy,Banking,Energy,Banking,3,0.0259708882433073,0.3534070823812356,3.137801383060654,270,1.5855131965944131,cross,False,raw
 Technology,ConsumerStaples,Technology,ConsumerStaples,5,0.0274872175185405,0.3534070823812356,2.5670094286756497,270,1.560869220778747,cross,False,raw
-SteelMaterials,Banking,SteelMaterials,Banking,2,0.0435760204745175,0.438311777867255,3.170874440792534,270,1.3607524336783823,cross,False,raw
+SteelMaterials,Banking,SteelMaterials,Banking,2,0.0435760204745175,0.438311777867255,3.170874440792534,270,1.360752433678382,cross,False,raw
 SteelMaterials,Healthcare,SteelMaterials,Healthcare,1,0.0438311777867255,0.438311777867255,4.10199510415382,270,1.3582168592706736,cross,False,raw
