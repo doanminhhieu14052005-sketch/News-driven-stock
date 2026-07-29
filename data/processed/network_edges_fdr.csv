@@ -1,2 +1,2 @@
 ﻿source,target,source_sector,target_sector,best_lag,p_value,p_value_fdr_bh,f_stat,n_obs,edge_weight,edge_type,is_self_edge,significance_type
-IndustrialLogistics,Energy,IndustrialLogistics,Energy,5,0.0003322993353829,0.0299069401844658,4.788095851340103,277,1.5242280178940755,cross,False,fdr
+IndustrialLogistics,Energy,IndustrialLogistics,Energy,5,0.0002530083557843,0.022770752020589,4.921724241075161,278,1.6426226262579822,cross,False,fdr
