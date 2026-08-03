@@ -1,3 +1,3 @@
 ﻿source,target,source_sector,target_sector,best_lag,p_value,p_value_fdr_bh,edge_weight,n_obs,f_stat
-IndustrialLogistics,Energy,IndustrialLogistics,Energy,5,0.00014853988696226632,0.01336858982660397,1.8739144014757958,280,5.182209172222561
-IndustrialLogistics,Banking,IndustrialLogistics,Banking,3,0.001106628158579243,0.04979826713606593,1.3027857694157483,280,5.50239464791173
+IndustrialLogistics,Energy,IndustrialLogistics,Energy,5,0.00011452273600917234,0.010307046240825509,1.9868657755606418,281,5.309172395155947
+IndustrialLogistics,Banking,IndustrialLogistics,Banking,3,0.0007787300409618567,0.03504285184328355,1.455400557486755,281,5.7645919404098676
