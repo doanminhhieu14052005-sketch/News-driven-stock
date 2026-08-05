@@ -1,3 +1,3 @@
 ﻿network_type,total_edges,cross_edges,self_edges,number_of_nodes,number_of_active_source_nodes,number_of_active_target_nodes,density_cross,top_sender_by_weight,top_receiver_by_weight,strongest_edge_source,strongest_edge_target,strongest_edge_weight,strongest_edge_p_value
-raw,23,23,0,10,9,9,0.25555555555555554,IndustrialLogistics,Banking,IndustrialLogistics,Energy,4.052309025028329,8.865249750147153e-05
-fdr,3,3,0,10,2,3,0.03333333333333333,IndustrialLogistics,Energy,IndustrialLogistics,Energy,2.0980665155890064,0.0079787247751324
+raw,24,24,0,10,9,9,0.26666666666666666,IndustrialLogistics,Banking,IndustrialLogistics,Energy,4.1617983267545196,6.889721599411405e-05
+fdr,4,4,0,10,3,3,0.044444444444444446,IndustrialLogistics,Banking,IndustrialLogistics,Energy,2.2075558173151992,0.0062007494394702
